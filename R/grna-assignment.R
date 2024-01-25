@@ -33,7 +33,31 @@ assign_grnas_sceptre <- function(mudata, method, ...) {
     sceptre::assign_grnas(method = method, ...)
 
   # extract sparse logical matrix of gRNA assignments
+  grna_assignment_matrix <- extract_grna_assignment_matrix(sceptre_object)
+
+  # add sparse logical matrix to the MuData
+  mudata <- add_matrix_to_mudata(
+    new_matrix = grna_assignment_matrix,
+    mudata = mudata,
+    experiment_name = "grna_assignment"
+  )
+
+  # return MuData
+  return(mudata)
+}
+
+
+#' Extra gRNA assignment matrix from `sceptre` object
+#'
+#' @param sceptre_object A sceptre_object
+#'
+#' @return A sparse logical matrix of gRNA assignments
+#' @export
+extract_grna_assignment_matrix <- function(sceptre_object){
   grna_assignments <- sceptre_object@initial_grna_assignment_list
+  if(length(grna_assignments) == 0){
+    return(NULL)
+  }
   grna_names <- names(grna_assignments)
   cell_barcodes <- colnames(sceptre_object@grna_matrix)
   j <- unlist(grna_assignments)
@@ -47,14 +71,5 @@ assign_grnas_sceptre <- function(mudata, method, ...) {
     dimnames = list(grna_names, cell_barcodes),
     x = rep(1, length(j))
   )
-
-  # add sparse logical matrix to the MuData
-  mudata <- add_matrix_to_mudata(
-    new_matrix = grna_assignment_matrix,
-    mudata = mudata,
-    experiment_name = "grna_assignment"
-  )
-
-  # return MuData
-  return(mudata)
+  return(grna_assignment_matrix)
 }
