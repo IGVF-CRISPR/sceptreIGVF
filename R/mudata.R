@@ -212,9 +212,9 @@ sceptre_object_to_mudata <- function(sceptre_object){
   } else {
     grna_assignment_se <- NULL
   }
-  experiment_list <- list(gene = gene_se, grna = grna_se)
+  experiment_list <- list(gene = gene_se, guide = grna_se)
   if (!is.null(grna_assignment_se)) {
-    experiment_list[["grna_assignment"]] <- grna_assignment_se
+    experiment_list[["guide_assignment"]] <- grna_assignment_se
   }
   mae <- MultiAssayExperiment::MultiAssayExperiment(
     experiments = experiment_list,
