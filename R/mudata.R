@@ -180,6 +180,9 @@ sceptre_object_to_mudata <- function(sceptre_object){
   colnames(response_matrix) <- cell_ids
   colnames(grna_matrix) <- cell_ids
   rownames(sample_df) <- cell_ids
+  if(!is.null(grna_assignment_matrix)){
+    colnames(grna_assignment_matrix) <- cell_ids
+  }
   pairs <- rbind(
     positive_control_pairs |> dplyr::mutate(pair_type = "positive_control"),
     discovery_pairs |> dplyr::mutate(pair_type = "discovery")
