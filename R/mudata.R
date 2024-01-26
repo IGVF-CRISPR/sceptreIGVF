@@ -128,7 +128,9 @@ sceptre_object_to_mudata <- function(sceptre_object){
     sample_df <- MultiAssayExperiment::DataFrame(batch = rep(1, nrow(covariate_df)))
   } else if (length(batch_cols) == 1) {
     # One matching column, create a DataFrame with its contents
-    sample_df <- MultiAssayExperiment::DataFrame(batch = covariate_df[[batch_cols]])
+    sample_df <- MultiAssayExperiment::DataFrame(
+      batch = covariate_df[[batch_cols]] |> as.factor() |> as.integer()
+    )
   } else {
     # More than one matching column, throw an error
     stop("Error: More than one column found containing 'rep' or 'batch'")
