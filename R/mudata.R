@@ -129,7 +129,7 @@ sceptre_object_to_mudata <- function(sceptre_object){
   } else if (length(batch_cols) == 1) {
     # One matching column, create a DataFrame with its contents
     sample_df <- MultiAssayExperiment::DataFrame(
-      batch = covariate_df[[batch_cols]] |> as.factor() |> as.integer()
+      batch = covariate_df[[batch_cols]]
     )
   } else {
     # More than one matching column, throw an error
