@@ -192,7 +192,7 @@ sceptre_object_to_mudata <- function(sceptre_object){
     metadata[["inference_results"]] = pairs |>
       dplyr::select(grna_target, response_id, pair_type) |>
       dplyr::rename(gene_id = response_id) |>
-      dplyr::mutate(p_value = -9, log_2_fold_change = -9) |>
+      dplyr::mutate(p_value = -9, log_2_FC = -9) |>
       MultiAssayExperiment::DataFrame()
   }
 
