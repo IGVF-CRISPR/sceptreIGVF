@@ -121,53 +121,43 @@ sceptre_object_to_mudata <- function(sceptre_object){
   gene_names <- sceptre_object@response_names
 
   # 2. Extract batch info, if present
-  batch_cols <- grep("rep|batch", names(covariate_df), ignore.case = TRUE)
-  # Check the number of matching columns and act accordingly
-  if (length(batch_cols) == 0) {
-    # No matching columns, create a DataFrame with all ones
-    sample_df <- MultiAssayExperiment::DataFrame(batch = rep(1, nrow(covariate_df)))
-  } else if (length(batch_cols) == 1) {
-    # One matching column, create a DataFrame with its contents
-    sample_df <- MultiAssayExperiment::DataFrame(
-      batch = covariate_df[[batch_cols]]
-    )
-  } else {
-    # More than one matching column, throw an error
-    stop("Error: More than one column found containing 'rep' or 'batch'")
-  }
+  sample_df <- covariate_df |>
+    dplyr::select(-grna_n_nonzero, -grna_n_umis, -response_n_nonzero, -response_n_umis)
 
   # 3. Extra gRNA and gene information
   grna_ids <- rownames(grna_matrix)
   grna_rowdata <- grna_target_data_frame |>
     dplyr::arrange(match(grna_id, grna_ids)) |>
     tibble::column_to_rownames(var = "grna_id") |>
-    dplyr::mutate(targeting = grna_target != "non-targeting") |>
+    dplyr::mutate(targeting = ifelse(grna_target != "non-targeting", "TRUE", "FALSE")) |>
     dplyr::relocate(targeting) |>
-    dplyr::rename(guide_target = grna_target)
+    dplyr::rename(intended_target_name = grna_target)
   if("chr" %in% colnames(grna_rowdata)){
     grna_rowdata <- grna_rowdata |>
       dplyr::mutate(chr = ifelse(is.na(chr), "", chr)) |>
-      dplyr::rename(guide_chr = chr)
+      dplyr::rename(intended_target_chr = chr)
   }
   if("start" %in% colnames(grna_rowdata)){
     grna_rowdata <- grna_rowdata |>
       dplyr::mutate(start = ifelse(is.na(start), -9, start)) |>
-      dplyr::rename(guide_start = start)
+      dplyr::rename(intended_target_start = start)
   }
   if("end" %in% colnames(grna_rowdata)){
     grna_rowdata <- grna_rowdata |>
       dplyr::mutate(end = ifelse(is.na(end), -9, end)) |>
-      dplyr::rename(guide_end = end)
+      dplyr::rename(intended_target_end = end)
   }
   if("grna_group" %in% colnames(grna_rowdata)){
     grna_rowdata <- grna_rowdata |>
       dplyr::select(-grna_group)
   }
-  if(sum(!is.na(gene_names)) > 0){
-    gene_rowdata <- data.frame(symbol = gene_names)
-  } else{
-    gene_rowdata <- NULL
-  }
+  grna_coldata <- covariate_df |>
+    dplyr::select(grna_n_nonzero, grna_n_umis) |>
+    dplyr::rename(num_expressed_grnas = grna_n_nonzero, total_grna_umis = grna_n_umis)
+
+  gene_coldata <- covariate_df |>
+    dplyr::select(response_n_nonzero, response_n_umis) |>
+    dplyr::rename(num_expressed_genes = response_n_nonzero, total_gene_umis = response_n_umis)
 
   # 4. Prepare for conversion to MuData
   response_matrix <- methods::as(response_matrix, "CsparseMatrix")
@@ -188,40 +178,43 @@ sceptre_object_to_mudata <- function(sceptre_object){
     discovery_pairs |> dplyr::mutate(pair_type = "discovery")
   )
   metadata <- list(moi = moi)
-  if(nrow(pairs) > 0){
-    metadata[["inference_results"]] = pairs |>
-      dplyr::select(grna_target, response_id, pair_type) |>
-      dplyr::rename(gene_id = response_id) |>
-      dplyr::mutate(p_value = -9, log_2_FC = -9) |>
-      MultiAssayExperiment::DataFrame()
-  }
+
+  metadata[["pairs_to_test"]] <- pairs |>
+    dplyr::select(grna_target, response_id, pair_type) |>
+    dplyr::rename(intended_target_name = grna_target, gene_id = response_id) |>
+    MultiAssayExperiment::DataFrame()
+
+  metadata[["test_results"]] <- pairs |>
+    dplyr::select(grna_target, response_id, pair_type) |>
+    dplyr::left_join(rbind(sceptre_object@power_result |>
+                      dplyr::select(grna_target, response_id, p_value, log_2_fold_change),
+                    sceptre_object@discovery_result |>
+                      dplyr::select(grna_target, response_id, p_value, log_2_fold_change)),
+              by = c("grna_target", "response_id")) |>
+    dplyr::rename(intended_target_name = grna_target,
+                  gene_id = response_id,
+                  log2_fc = log_2_fold_change) |>
+    MultiAssayExperiment::DataFrame()
 
   # 5. Create MuData object
   gene_se <- SummarizedExperiment::SummarizedExperiment(
     assays = list(counts = response_matrix),
-    rowData = gene_rowdata
+    colData = gene_coldata,
   )
-  grna_se <- SummarizedExperiment::SummarizedExperiment(
-    assays = list(counts = grna_matrix),
-    rowData = grna_rowdata
-  )
+  grna_assays <- list(counts = grna_matrix)
   if (!is.null(grna_assignment_matrix)) {
-    grna_assignment_se <- SummarizedExperiment::SummarizedExperiment(
-      assays = list(counts = grna_assignment_matrix),
-    )
-  } else {
-    grna_assignment_se <- NULL
+    grna_assays[["grna_assignments"]] <- grna_assignment_matrix
   }
-  experiment_list <- list(gene = gene_se, guide = grna_se)
-  if (!is.null(grna_assignment_se)) {
-    experiment_list[["guide_assignment"]] <- grna_assignment_se
-  }
+  grna_se <- SummarizedExperiment::SummarizedExperiment(
+    assays = grna_assays,
+    rowData = grna_rowdata,
+    colData = grna_coldata
+  )
   mae <- MultiAssayExperiment::MultiAssayExperiment(
-    experiments = experiment_list,
+    experiments = list(gene = gene_se, guide = grna_se),
     colData = sample_df,
     metadata = metadata
   )
 
   return(mae)
 }
-
