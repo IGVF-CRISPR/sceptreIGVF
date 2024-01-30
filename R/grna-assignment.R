@@ -58,8 +58,9 @@ extract_grna_assignment_matrix <- function(sceptre_object){
   if(length(grna_assignments) == 0){
     return(NULL)
   }
-  grna_names <- names(grna_assignments)
+  grna_names <- rownames(sceptre_object@grna_matrix)
   cell_barcodes <- colnames(sceptre_object@grna_matrix)
+  grna_assignments <- grna_assignments[grna_names]
   j <- unlist(grna_assignments)
   p <- c(0, cumsum(sapply(grna_assignments, length)))
   num_rows <- length(grna_assignments)

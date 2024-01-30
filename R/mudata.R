@@ -122,7 +122,8 @@ sceptre_object_to_mudata <- function(sceptre_object){
 
   # 2. Extract batch info, if present
   sample_df <- covariate_df |>
-    dplyr::select(-grna_n_nonzero, -grna_n_umis, -response_n_nonzero, -response_n_umis)
+    dplyr::select(-dplyr::any_of(c("grna_n_nonzero", "grna_n_umis",
+                  "response_n_nonzero", "response_n_umis", "response_p_mito")))
 
   # 3. Extra gRNA and gene information
   grna_ids <- rownames(grna_matrix)
@@ -162,11 +163,16 @@ sceptre_object_to_mudata <- function(sceptre_object){
   # 4. Prepare for conversion to MuData
   response_matrix <- methods::as(response_matrix, "CsparseMatrix")
   grna_matrix <- methods::as(grna_matrix, "CsparseMatrix")
-  if(is.null(colnames(response_matrix))){
-    cell_ids <- paste0("cell_", 1:ncol(response_matrix))
-  } else{
+  if(!is.null(colnames(response_matrix))){
     cell_ids <- colnames(response_matrix)
+  } else if(!is.null(colnames(grna_matrix))){
+    cell_ids <- colnames(grna_matrix)
+  } else if(!is.null(rownames(covariate_df))){
+    cell_ids <- rownames(covariate_df)
+  } else{
+    cell_ids <- paste0("cell_", 1:ncol(response_matrix))
   }
+
   colnames(response_matrix) <- cell_ids
   colnames(grna_matrix) <- cell_ids
   rownames(sample_df) <- cell_ids
@@ -217,4 +223,122 @@ sceptre_object_to_mudata <- function(sceptre_object){
   )
 
   return(mae)
+}
+
+#' Convert sceptre_object a set of MuData objects to be used as inputs and outputs
+#' for both gRNA assignment and inference
+#'
+#' @param sceptre_object Sceptre object
+#' @param num_discovery_pairs Number of discovery pairs to sample
+#' @param gene_info Gene information data frame (optional)
+#'
+#' @return List of MuData objects
+#' @export
+sceptre_object_to_mudata_inputs_outputs <- function(sceptre_object, num_discovery_pairs, gene_info = NULL){
+  positive_control_pairs_2 <- sceptre_object |>
+    sceptre::get_result("run_power_check") |>
+    stats::na.omit() |>
+    dplyr::select(response_id, grna_target)
+
+  discovery_results <- sceptre_object |>
+    sceptre::get_result("run_discovery_analysis") |>
+    stats::na.omit()
+  num_significant <- discovery_results |>
+    dplyr::summarize(sum(significant)) |>
+    dplyr::pull()
+  num_non_significant <- discovery_results |>
+    dplyr::summarize(sum(!significant)) |>
+    dplyr::pull()
+  num_significant_to_keep <- min(num_significant, round(num_discovery_pairs/2))
+  num_non_significant_to_keep <- min(num_non_significant,
+                                     num_discovery_pairs - num_significant_to_keep)
+  discovery_pairs_2 <- rbind(
+    discovery_results |>
+      dplyr::filter(significant) |>
+      dplyr::slice_sample(n = num_significant_to_keep),
+    discovery_results |>
+      dplyr::filter(!significant) |>
+      dplyr::slice_sample(n = num_non_significant_to_keep)
+  ) |>
+    dplyr::select(response_id, grna_target)
+
+  sceptre_object_2 <- sceptre_object |>
+    sceptre::set_analysis_parameters(
+      discovery_pairs = discovery_pairs_2,
+      positive_control_pairs = positive_control_pairs_2,
+      formula = sceptre_object@formula_object,
+      side = c("left", "both", "right")[sceptre_object@side_code + 2],
+    ) |>
+    sceptre::assign_grnas(parallel = TRUE) |>
+    sceptre::run_qc() |>
+    sceptre::run_power_check(parallel = TRUE) |>
+    sceptre::run_discovery_analysis(parallel = TRUE)
+
+  mae_inference_output <- sceptre_object_to_mudata(sceptre_object_2)
+  if(!is.null(gene_info)){
+    SummarizedExperiment::rowData(mae_inference_output[["gene"]]) <- gene_info
+  }
+
+  mae_inference_input <- mae_inference_output
+  MultiAssayExperiment::metadata(mae_inference_input)$test_results <- NULL
+
+  mae_grna_assignment_output <- mae_inference_input
+  MultiAssayExperiment::metadata(mae_grna_assignment_output)$pairs_to_test <- NULL
+
+  mae_grna_assignment_input <- mae_grna_assignment_output
+  guide_assays_list <- SummarizedExperiment::assays(mae_grna_assignment_input[['guide']])
+  guide_assays_list$grna_assignments <- NULL
+  SummarizedExperiment::assays(mae_grna_assignment_input[['guide']]) <- guide_assays_list
+
+  mae_inference_output_minimal <- mae_inference_output
+  MultiAssayExperiment::colData(mae_inference_output_minimal) <- MultiAssayExperiment::DataFrame(
+    row.names = rownames(MultiAssayExperiment::colData(mae_inference_output_minimal))
+  )
+  SummarizedExperiment::rowData(mae_inference_output_minimal[['gene']]) <- NULL
+  SummarizedExperiment::colData(mae_inference_output_minimal[['gene']]) <- NULL
+  SummarizedExperiment::rowData(mae_inference_output_minimal[['guide']]) <-
+    SummarizedExperiment::rowData(mae_inference_output_minimal[['guide']])[,c("targeting", "intended_target_name")]
+  SummarizedExperiment::colData(mae_inference_output_minimal[['guide']]) <- NULL
+  MultiAssayExperiment::metadata(mae_inference_output_minimal)$pairs_to_test <-
+    MultiAssayExperiment::metadata(mae_inference_output_minimal)$pairs_to_test[,c("intended_target_name", "gene_id")]
+  MultiAssayExperiment::metadata(mae_inference_output_minimal)$test_results <-
+    MultiAssayExperiment::metadata(mae_inference_output_minimal)$test_results[,c("intended_target_name", "gene_id", "p_value")]
+
+  mae_inference_input_minimal <- mae_inference_output_minimal
+  MultiAssayExperiment::metadata(mae_inference_input_minimal)$test_results <- NULL
+
+  mae_grna_assignment_output_minimal <- mae_inference_input_minimal
+  MultiAssayExperiment::metadata(mae_grna_assignment_output_minimal)$pairs_to_test <- NULL
+
+  mae_grna_assignment_input_minimal <- mae_grna_assignment_output_minimal
+  guide_assays_list <- SummarizedExperiment::assays(mae_grna_assignment_input_minimal[['guide']])
+  guide_assays_list$grna_assignments <- NULL
+  SummarizedExperiment::assays(mae_grna_assignment_input_minimal[['guide']]) <- guide_assays_list
+
+  return(list(
+    inference_output = mae_inference_output,
+    inference_input = mae_inference_input,
+    grna_assignment_output = mae_grna_assignment_output,
+    grna_assignment_input = mae_grna_assignment_input,
+    inference_output_minimal = mae_inference_output_minimal,
+    inference_input_minimal = mae_inference_input_minimal,
+    grna_assignment_output_minimal = mae_grna_assignment_output_minimal,
+    grna_assignment_input_minimal = mae_grna_assignment_input_minimal)
+  )
+}
+
+
+#' Save a list of MuData objects to disk
+#'
+#' @param mudata_list List of MuData objects
+#' @param path Path to save files to
+#' @param prefix Prefix to add to file names
+#'
+#' @return NULL
+#' @export
+save_mudata_list <- function(mudata_list, path = ".", prefix = ""){
+  for(mudata_name in names(mudata_list)){
+    MuData::writeH5MU(object = mudata_list[[mudata_name]],
+                      file = file.path(path, paste0(prefix, mudata_name, ".h5mu")))
+  }
 }

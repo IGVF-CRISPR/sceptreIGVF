@@ -12,9 +12,11 @@ Imports:
     dplyr,
     Matrix,
     methods,
+    MuData,
     MultiAssayExperiment,
     sceptre,
     SingleCellExperiment,
+    stats,
     SummarizedExperiment,
     tibble
 Depends: 
