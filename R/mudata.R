@@ -20,7 +20,7 @@ convert_mudata_to_sceptre_object <- function(mudata, moi = "high", include_covar
   scRNA_data <- mudata@ExperimentList$scRNA
   guides_data <- mudata@ExperimentList$guides
   response_matrix <- scRNA_data@assays@data@listData[[1]]
-  guide_matrix <- guides_data@assays@data@listData[[1]]
+  grna_matrix <- guides_data@assays@data@listData[[1]]
   if(include_covariates){
     extra_covariates <- scRNA_data@colData |>
       as.data.frame()
@@ -29,17 +29,17 @@ convert_mudata_to_sceptre_object <- function(mudata, moi = "high", include_covar
   }
   response_names <- scRNA_data@rowRanges@elementMetadata$feature_name |>
     as.character()
-  guide_target_data_frame <- guides_data@rowRanges@elementMetadata |>
+  grna_target_data_frame <- guides_data@rowRanges@elementMetadata |>
     as.data.frame() |>
-    dplyr::rename(guide_id = feature_name, guide_target = target_elements,
+    dplyr::rename(grna_id = feature_name, grna_target = target_elements,
                   chr = guide_chr, start = guide_start, end = guide_end) |>
-    dplyr::select(guide_id, guide_target, chr, start, end)
+    dplyr::select(grna_id, grna_target, chr, start, end)
 
   # assemble information into sceptre object
   sceptre_object <- sceptre::import_data(
     response_matrix = response_matrix,
-    guide_matrix = guide_matrix,
-    guide_target_data_frame = guide_target_data_frame,
+    grna_matrix = grna_matrix,
+    grna_target_data_frame = grna_target_data_frame,
     moi = moi,
     extra_covariates = extra_covariates,
     response_names = response_names
@@ -77,12 +77,12 @@ convert_mudata_to_sceptre_object <- function(mudata, moi = "high", include_covar
 #' mudata
 add_matrix_to_mudata <- function(new_matrix, mudata, experiment_name){
   # convert matrix to SingleCellExperiment
-  guide_assignment_sce <- SingleCellExperiment::SingleCellExperiment(
+  grna_assignment_sce <- SingleCellExperiment::SingleCellExperiment(
     assays = list(counts = new_matrix)
   )
   # add SingleCellExperiment to MuData
   cell_barcodes <- colnames(new_matrix)
-  mudata@ExperimentList[[experiment_name]] <- guide_assignment_sce
+  mudata@ExperimentList[[experiment_name]] <- grna_assignment_sce
   mudata@sampleMap <- rbind(
     MultiAssayExperiment::sampleMap(mudata),
     data.frame(
@@ -108,13 +108,13 @@ sceptre_object_to_mudata <- function(sceptre_object){
     cells_in_use <- 1:ncol(sceptre_object@response_matrix)
   }
   response_matrix <- sceptre_object@response_matrix[, cells_in_use]
-  guide_matrix <- sceptre_object@guide_matrix[, cells_in_use]
-  guide_assignment_matrix <- extract_guide_assignment_matrix(sceptre_object)
-  if(!is.null(guide_assignment_matrix)){
-   guide_assignment_matrix <- guide_assignment_matrix[, cells_in_use]
+  grna_matrix <- sceptre_object@grna_matrix[, cells_in_use]
+  grna_assignment_matrix <- extract_grna_assignment_matrix(sceptre_object)
+  if(!is.null(grna_assignment_matrix)){
+   grna_assignment_matrix <- grna_assignment_matrix[, cells_in_use]
   }
   covariate_df <- sceptre_object@covariate_data_frame[cells_in_use, ]
-  guide_target_data_frame <- sceptre_object@guide_target_data_frame
+  grna_target_data_frame <- sceptre_object@grna_target_data_frame
   positive_control_pairs <- sceptre_object@positive_control_pairs
   discovery_pairs <- sceptre_object@discovery_pairs
   moi <- if(sceptre_object@low_moi) "low" else "high"
@@ -122,39 +122,39 @@ sceptre_object_to_mudata <- function(sceptre_object){
 
   # 2. Extract batch info, if present
   sample_df <- covariate_df |>
-    dplyr::select(-dplyr::any_of(c("guide_n_nonzero", "guide_n_umis",
+    dplyr::select(-dplyr::any_of(c("grna_n_nonzero", "grna_n_umis",
                   "response_n_nonzero", "response_n_umis", "response_p_mito")))
 
   # 3. Extra gRNA and gene information
-  guide_ids <- rownames(guide_matrix)
-  guide_rowdata <- guide_target_data_frame |>
-    dplyr::arrange(match(guide_id, guide_ids)) |>
-    tibble::column_to_rownames(var = "guide_id") |>
-    dplyr::mutate(targeting = ifelse(guide_target != "non-targeting", "TRUE", "FALSE")) |>
+  grna_ids <- rownames(grna_matrix)
+  grna_rowdata <- grna_target_data_frame |>
+    dplyr::arrange(match(grna_id, grna_ids)) |>
+    tibble::column_to_rownames(var = "grna_id") |>
+    dplyr::mutate(targeting = ifelse(grna_target != "non-targeting", "TRUE", "FALSE")) |>
     dplyr::relocate(targeting) |>
-    dplyr::rename(intended_target_name = guide_target)
-  if("chr" %in% colnames(guide_rowdata)){
-    guide_rowdata <- guide_rowdata |>
+    dplyr::rename(intended_target_name = grna_target)
+  if("chr" %in% colnames(grna_rowdata)){
+    grna_rowdata <- grna_rowdata |>
       dplyr::mutate(chr = ifelse(is.na(chr), "", chr)) |>
       dplyr::rename(intended_target_chr = chr)
   }
-  if("start" %in% colnames(guide_rowdata)){
-    guide_rowdata <- guide_rowdata |>
+  if("start" %in% colnames(grna_rowdata)){
+    grna_rowdata <- grna_rowdata |>
       dplyr::mutate(start = ifelse(is.na(start), -9, start)) |>
       dplyr::rename(intended_target_start = start)
   }
-  if("end" %in% colnames(guide_rowdata)){
-    guide_rowdata <- guide_rowdata |>
+  if("end" %in% colnames(grna_rowdata)){
+    grna_rowdata <- grna_rowdata |>
       dplyr::mutate(end = ifelse(is.na(end), -9, end)) |>
       dplyr::rename(intended_target_end = end)
   }
-  if("guide_group" %in% colnames(guide_rowdata)){
-    guide_rowdata <- guide_rowdata |>
-      dplyr::select(-guide_group)
+  if("grna_group" %in% colnames(grna_rowdata)){
+    grna_rowdata <- grna_rowdata |>
+      dplyr::select(-grna_group)
   }
-  guide_coldata <- covariate_df |>
-    dplyr::select(guide_n_nonzero, guide_n_umis) |>
-    dplyr::rename(num_expressed_guides = guide_n_nonzero, total_guide_umis = guide_n_umis)
+  grna_coldata <- covariate_df |>
+    dplyr::select(grna_n_nonzero, grna_n_umis) |>
+    dplyr::rename(num_expressed_guides = grna_n_nonzero, total_guide_umis = grna_n_umis)
 
   gene_coldata <- covariate_df |>
     dplyr::select(response_n_nonzero, response_n_umis) |>
@@ -162,11 +162,11 @@ sceptre_object_to_mudata <- function(sceptre_object){
 
   # 4. Prepare for conversion to MuData
   response_matrix <- methods::as(response_matrix, "CsparseMatrix")
-  guide_matrix <- methods::as(guide_matrix, "CsparseMatrix")
+  grna_matrix <- methods::as(grna_matrix, "CsparseMatrix")
   if(!is.null(colnames(response_matrix))){
     cell_ids <- colnames(response_matrix)
-  } else if(!is.null(colnames(guide_matrix))){
-    cell_ids <- colnames(guide_matrix)
+  } else if(!is.null(colnames(grna_matrix))){
+    cell_ids <- colnames(grna_matrix)
   } else if(!is.null(rownames(covariate_df))){
     cell_ids <- rownames(covariate_df)
   } else{
@@ -174,10 +174,10 @@ sceptre_object_to_mudata <- function(sceptre_object){
   }
 
   colnames(response_matrix) <- cell_ids
-  colnames(guide_matrix) <- cell_ids
+  colnames(grna_matrix) <- cell_ids
   rownames(sample_df) <- cell_ids
-  if(!is.null(guide_assignment_matrix)){
-    colnames(guide_assignment_matrix) <- cell_ids
+  if(!is.null(grna_assignment_matrix)){
+    colnames(grna_assignment_matrix) <- cell_ids
   }
   pairs <- rbind(
     positive_control_pairs |> dplyr::mutate(pair_type = "positive_control"),
@@ -186,18 +186,18 @@ sceptre_object_to_mudata <- function(sceptre_object){
   metadata <- list(moi = moi)
 
   metadata[["pairs_to_test"]] <- pairs |>
-    dplyr::select(guide_target, response_id, pair_type) |>
-    dplyr::rename(intended_target_name = guide_target, gene_id = response_id) |>
+    dplyr::select(grna_target, response_id, pair_type) |>
+    dplyr::rename(intended_target_name = grna_target, gene_id = response_id) |>
     MultiAssayExperiment::DataFrame()
 
   metadata[["test_results"]] <- pairs |>
-    dplyr::select(guide_target, response_id, pair_type) |>
+    dplyr::select(grna_target, response_id, pair_type) |>
     dplyr::left_join(rbind(sceptre_object@power_result |>
-                      dplyr::select(guide_target, response_id, p_value, log_2_fold_change),
+                      dplyr::select(grna_target, response_id, p_value, log_2_fold_change),
                     sceptre_object@discovery_result |>
-                      dplyr::select(guide_target, response_id, p_value, log_2_fold_change)),
-              by = c("guide_target", "response_id")) |>
-    dplyr::rename(intended_target_name = guide_target,
+                      dplyr::select(grna_target, response_id, p_value, log_2_fold_change)),
+              by = c("grna_target", "response_id")) |>
+    dplyr::rename(intended_target_name = grna_target,
                   gene_id = response_id,
                   log2_fc = log_2_fold_change) |>
     MultiAssayExperiment::DataFrame()
@@ -207,17 +207,17 @@ sceptre_object_to_mudata <- function(sceptre_object){
     assays = list(counts = response_matrix),
     colData = gene_coldata,
   )
-  guide_assays <- list(counts = guide_matrix)
-  if (!is.null(guide_assignment_matrix)) {
-    guide_assays[["guide_assignment"]] <- guide_assignment_matrix
+  grna_assays <- list(counts = grna_matrix)
+  if (!is.null(grna_assignment_matrix)) {
+    grna_assays[["guide_assignment"]] <- grna_assignment_matrix
   }
-  guide_se <- SummarizedExperiment::SummarizedExperiment(
-    assays = guide_assays,
-    rowData = guide_rowdata,
-    colData = guide_coldata
+  grna_se <- SummarizedExperiment::SummarizedExperiment(
+    assays = grna_assays,
+    rowData = grna_rowdata,
+    colData = grna_coldata
   )
   mae <- MultiAssayExperiment::MultiAssayExperiment(
-    experiments = list(gene = gene_se, guide = guide_se),
+    experiments = list(gene = gene_se, guide = grna_se),
     colData = sample_df,
     metadata = metadata
   )
@@ -238,7 +238,7 @@ sceptre_object_to_mudata_inputs_outputs <- function(sceptre_object, num_discover
   positive_control_pairs_2 <- sceptre_object |>
     sceptre::get_result("run_power_check") |>
     stats::na.omit() |>
-    dplyr::select(response_id, guide_target)
+    dplyr::select(response_id, grna_target)
 
   discovery_results <- sceptre_object |>
     sceptre::get_result("run_discovery_analysis") |>
@@ -260,7 +260,7 @@ sceptre_object_to_mudata_inputs_outputs <- function(sceptre_object, num_discover
       dplyr::filter(!significant) |>
       dplyr::slice_sample(n = num_non_significant_to_keep)
   ) |>
-    dplyr::select(response_id, guide_target)
+    dplyr::select(response_id, grna_target)
 
   sceptre_object_2 <- sceptre_object |>
     sceptre::set_analysis_parameters(
@@ -287,7 +287,7 @@ sceptre_object_to_mudata_inputs_outputs <- function(sceptre_object, num_discover
 
   mae_guide_assignment_input <- mae_guide_assignment_output
   guide_assays_list <- SummarizedExperiment::assays(mae_guide_assignment_input[['guide']])
-  guide_assays_list$guide_assignments <- NULL
+  guide_assays_list$guide_assignment <- NULL
   SummarizedExperiment::assays(mae_guide_assignment_input[['guide']]) <- guide_assays_list
 
   mae_inference_output_minimal <- mae_inference_output
@@ -312,7 +312,7 @@ sceptre_object_to_mudata_inputs_outputs <- function(sceptre_object, num_discover
 
   mae_guide_assignment_input_minimal <- mae_guide_assignment_output_minimal
   guide_assays_list <- SummarizedExperiment::assays(mae_guide_assignment_input_minimal[['guide']])
-  guide_assays_list$guide_assignments <- NULL
+  guide_assays_list$guide_assignment <- NULL
   SummarizedExperiment::assays(mae_guide_assignment_input_minimal[['guide']]) <- guide_assays_list
 
   return(list(
