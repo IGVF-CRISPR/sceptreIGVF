@@ -209,7 +209,7 @@ sceptre_object_to_mudata <- function(sceptre_object){
   )
   grna_assays <- list(counts = grna_matrix)
   if (!is.null(grna_assignment_matrix)) {
-    grna_assays[["grna_assignments"]] <- grna_assignment_matrix
+    grna_assays[["guide_assignment"]] <- grna_assignment_matrix
   }
   grna_se <- SummarizedExperiment::SummarizedExperiment(
     assays = grna_assays,
