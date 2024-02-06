@@ -234,7 +234,12 @@ sceptre_object_to_mudata <- function(sceptre_object){
 #'
 #' @return List of MuData objects
 #' @export
-sceptre_object_to_mudata_inputs_outputs <- function(sceptre_object, num_discovery_pairs, gene_info = NULL){
+sceptre_object_to_mudata_inputs_outputs <- function(
+    sceptre_object,
+    num_discovery_pairs,
+    gene_info = NULL,
+    guide_capture_method = NULL
+  ){
   positive_control_pairs_2 <- sceptre_object |>
     sceptre::get_result("run_power_check") |>
     stats::na.omit() |>
@@ -277,6 +282,9 @@ sceptre_object_to_mudata_inputs_outputs <- function(sceptre_object, num_discover
   mae_inference_output <- sceptre_object_to_mudata(sceptre_object_2)
   if(!is.null(gene_info)){
     SummarizedExperiment::rowData(mae_inference_output[["gene"]]) <- gene_info
+  }
+  if(!is.null(guide_capture_method)){
+    MultiAssayExperiment::metadata(mae_inference_output)$grna_capture_method <- guide_capture_method
   }
 
   mae_inference_input <- mae_inference_output
