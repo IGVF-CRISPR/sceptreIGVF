@@ -183,7 +183,7 @@ sceptre_object_to_mudata <- function(sceptre_object){
     positive_control_pairs |> dplyr::mutate(pair_type = "positive_control"),
     discovery_pairs |> dplyr::mutate(pair_type = "discovery")
   )
-  metadata <- list(moi = moi)
+  metadata <- list()
 
   metadata[["pairs_to_test"]] <- pairs |>
     dplyr::select(grna_target, response_id, pair_type) |>
@@ -214,7 +214,8 @@ sceptre_object_to_mudata <- function(sceptre_object){
   grna_se <- SummarizedExperiment::SummarizedExperiment(
     assays = grna_assays,
     rowData = grna_rowdata,
-    colData = grna_coldata
+    colData = grna_coldata,
+    metadata = list(moi = moi)
   )
   mae <- MultiAssayExperiment::MultiAssayExperiment(
     experiments = list(gene = gene_se, guide = grna_se),
@@ -284,7 +285,7 @@ sceptre_object_to_mudata_inputs_outputs <- function(
     SummarizedExperiment::rowData(mae_inference_output[["gene"]]) <- gene_info
   }
   if(!is.null(guide_capture_method)){
-    MultiAssayExperiment::metadata(mae_inference_output)$grna_capture_method <- guide_capture_method
+    MultiAssayExperiment::metadata(mae_inference_output[["guide"]])$capture_method <- guide_capture_method
   }
 
   mae_inference_input <- mae_inference_output
