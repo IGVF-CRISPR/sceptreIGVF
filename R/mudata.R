@@ -346,7 +346,25 @@ sceptre_object_to_mudata_inputs_outputs <- function(
 #' @return NULL
 #' @export
 save_mudata_list <- function(mudata_list, path = ".", prefix = ""){
+  # create subdirectories of path for guide assignment and inference
+  guide_assignment_path <- file.path(path, "guide_assignment")
+  inference_path <- file.path(path, "inference")
+  paths <- c(guide_assignment_path, inference_path)
+  for(p in paths){
+    if(!dir.exists(p)){
+      dir.create(p, recursive = TRUE)
+    }
+  }
+  # save guide assignment and inference MuData objects to disk
   for(mudata_name in names(mudata_list)){
+    # determine subfolder to save file in
+    if(grepl("guide_assignment", mudata_name)){
+      path <- guide_assignment_path
+    } else if(grepl("inference", mudata_name)){
+      path <- inference_path
+    } else {
+      stop("mudata_name must contain either 'guide_assignment' or 'inference'")
+    }
     MuData::writeH5MU(object = mudata_list[[mudata_name]],
                       file = file.path(path, paste0(prefix, mudata_name, ".h5mu")))
   }
