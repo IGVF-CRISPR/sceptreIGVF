@@ -4,7 +4,7 @@
 \alias{assign_grnas_sceptre}
 \title{Assign gRNAs to cells}
 \usage{
-assign_grnas_sceptre(mudata, method, ...)
+assign_grnas_sceptre(mudata)
 }
 \arguments{
 \item{mudata}{A MuData object}
@@ -23,8 +23,8 @@ Assign gRNAs to cells
 \examples{
 library(sceptreIGVF)
 # load sample MuData
-data(sample_mudata)
+data(mudata_guide_assignment)
 # assign gRNAs
-mudata <- assign_grnas_sceptre(sample_mudata, method = "thresholding", threshold = 5)
-mudata
+mudata_out <- assign_grnas_sceptre(mudata_guide_assignment)
+mudata_out
 }

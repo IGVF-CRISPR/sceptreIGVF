@@ -8,7 +8,8 @@ for both gRNA assignment and inference}
 sceptre_object_to_mudata_inputs_outputs(
   sceptre_object,
   num_discovery_pairs,
-  gene_info = NULL
+  gene_info = NULL,
+  guide_capture_method = NULL
 )
 }
 \arguments{

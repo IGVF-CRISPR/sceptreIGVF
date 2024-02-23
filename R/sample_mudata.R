@@ -2,10 +2,10 @@
 #'
 #' A subset of the MuData object from the Gasperini et al. (2019) pilot data
 #'
-#' @name sample_mudata
+#' @name mudata_guide_assignment
 #' @docType data
-#' @usage data(sample_mudata)
+#' @usage data(mudata_guide_assignment)
 #' @examples
-#' data(sample_mudata)
-#' sample_mudata
-"sample_mudata"
+#' data(mudata_guide_assignment)
+#' mudata_guide_assignment
+"mudata_guide_assignment"

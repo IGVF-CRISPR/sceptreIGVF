@@ -4,7 +4,7 @@
 \alias{save_mudata_list}
 \title{Save a list of MuData objects to disk}
 \usage{
-save_mudata_list(mudata_list, path = "./", prefix = "")
+save_mudata_list(mudata_list, path = ".", prefix = "")
 }
 \arguments{
 \item{mudata_list}{List of MuData objects}

@@ -11,10 +11,10 @@
 #' @examples
 #' library(sceptreIGVF)
 #' # load sample MuData
-#' data(sample_mudata)
+#' data(mudata_guide_assignment)
 #' # assign gRNAs
-#' mudata <- assign_grnas_sceptre(sample_mudata, method = "thresholding", threshold = 5)
-#' mudata
+#' mudata_out <- assign_grnas_sceptre(mudata_guide_assignment)
+#' mudata_out
 assign_grnas_sceptre <- function(mudata) {
   # convert MuData object to sceptre object
   sceptre_object <- convert_mudata_to_sceptre_object(mudata)

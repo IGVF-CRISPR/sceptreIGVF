@@ -4,11 +4,7 @@
 \alias{convert_mudata_to_sceptre_object}
 \title{Convert IGVF CRISPR MuData to sceptre_object}
 \usage{
-convert_mudata_to_sceptre_object(
-  mudata,
-  moi = "high",
-  include_covariates = TRUE
-)
+convert_mudata_to_sceptre_object(mudata)
 }
 \arguments{
 \item{mudata}{IGVF CRISPR MuData object}
