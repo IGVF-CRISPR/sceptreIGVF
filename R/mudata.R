@@ -15,34 +15,53 @@
 #' # convert MuData object to sceptre object
 #' sceptre_object <- convert_mudata_to_sceptre_object(sample_mudata)
 #' sceptre_object
-convert_mudata_to_sceptre_object <- function(mudata, moi = "high", include_covariates = TRUE){
+convert_mudata_to_sceptre_object <- function(mudata){
   # extract information from MuData
-  scRNA_data <- mudata@ExperimentList$scRNA
-  guides_data <- mudata@ExperimentList$guides
-  response_matrix <- scRNA_data@assays@data@listData[[1]]
-  grna_matrix <- guides_data@assays@data@listData[[1]]
-  if(include_covariates){
-    extra_covariates <- scRNA_data@colData |>
-      as.data.frame()
+  moi <- metadata(mudata[['guide']])$moi
+  if(is.null(SummarizedExperiment::assayNames(mudata[['gene']]))){
+    SummarizedExperiment::assayNames(mudata[['gene']]) <- 'counts'
   } else{
-    extra_covariates <- data.frame()
+    SummarizedExperiment::assayNames(mudata[['gene']])[[1]] <- 'counts'
   }
-  response_names <- scRNA_data@rowRanges@elementMetadata$feature_name |>
-    as.character()
-  grna_target_data_frame <- guides_data@rowRanges@elementMetadata |>
+  if(is.null(SummarizedExperiment::assayNames(mudata[['guide']]))){
+    SummarizedExperiment::assayNames(mudata[['guide']]) <- 'counts'
+  } else{
+    SummarizedExperiment::assayNames(mudata[['guide']])[[1]] <- 'counts'
+  }
+
+  scRNA_data <- mudata@ExperimentList$gene
+  guides_data <- mudata@ExperimentList$guide
+  response_matrix <- scRNA_data@assays@data@listData[["counts"]]
+
+  # if guide assignments not present, then extract guide counts
+  if(length(guides_data@assays@data@listData) == 1){
+    grna_matrix <- guides_data@assays@data@listData[["counts"]]
+    # otherwise, extract guide assignments
+  } else{
+    grna_matrix <- guides_data@assays@data@listData[["guide_assignment"]]
+  }
+
+  grna_ids <- rownames(rowData(mudata[['guide']]))
+  rownames(grna_matrix) <- grna_ids
+
+  gene_ids <- rownames(rowData(mudata[['gene']]))
+  rownames(response_matrix) <- gene_ids
+
+  # response_names <- scRNA_data@rowRanges@elementMetadata$feature_name |>
+  #   as.character()
+
+  grna_target_data_frame <- rowData(mudata[['guide']]) |>
     as.data.frame() |>
-    dplyr::rename(grna_id = feature_name, grna_target = target_elements,
-                  chr = guide_chr, start = guide_start, end = guide_end) |>
-    dplyr::select(grna_id, grna_target, chr, start, end)
+    tibble::rownames_to_column(var = "grna_id") |>
+    dplyr::rename(grna_target = intended_target_name) |>
+    dplyr::select(grna_id, grna_target)
 
   # assemble information into sceptre object
   sceptre_object <- sceptre::import_data(
     response_matrix = response_matrix,
     grna_matrix = grna_matrix,
     grna_target_data_frame = grna_target_data_frame,
-    moi = moi,
-    extra_covariates = extra_covariates,
-    response_names = response_names
+    moi = moi
   )
 
   # return sceptre object

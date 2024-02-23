@@ -15,9 +15,9 @@
 #' # assign gRNAs
 #' mudata <- assign_grnas_sceptre(sample_mudata, method = "thresholding", threshold = 5)
 #' mudata
-assign_grnas_sceptre <- function(mudata, method, ...) {
+assign_grnas_sceptre <- function(mudata) {
   # convert MuData object to sceptre object
-  sceptre_object <- convert_mudata_to_sceptre_object(mudata, include_covariates = FALSE)
+  sceptre_object <- convert_mudata_to_sceptre_object(mudata)
 
   # set analysis parameters
   sceptre_object <- sceptre_object |>
@@ -29,18 +29,14 @@ assign_grnas_sceptre <- function(mudata, method, ...) {
    )
 
   # assign gRNAs
-  sceptre_object <- sceptre_object |>
-    sceptre::assign_grnas(method = method, ...)
+  sceptre_object <- sceptre_object |> sceptre::assign_grnas(method = "mixture")
 
   # extract sparse logical matrix of gRNA assignments
   grna_assignment_matrix <- extract_grna_assignment_matrix(sceptre_object)
+  colnames(grna_assignment_matrix) <- colnames(assay(mudata[['guide']]))
 
-  # add sparse logical matrix to the MuData
-  mudata <- add_matrix_to_mudata(
-    new_matrix = grna_assignment_matrix,
-    mudata = mudata,
-    experiment_name = "grna_assignment"
-  )
+  # add gRNA assignment matrix to MuData
+  assays(mudata[['guide']])[['guide_assignment']] <- grna_assignment_matrix
 
   # return MuData
   return(mudata)
