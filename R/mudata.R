@@ -41,13 +41,12 @@ convert_mudata_to_sceptre_object <- function(mudata){
     grna_matrix <- guides_data@assays@data@listData[["guide_assignment"]]
   }
 
-  grna_ids <- rownames(rowData(mudata[['guide']]))
+  grna_ids <- rownames(SingleCellExperiment::rowData(mudata[['guide']]))
   rownames(grna_matrix) <- grna_ids
 
-  gene_ids <- rownames(rowData(mudata[['gene']]))
+  gene_ids <- rownames(SingleCellExperiment::rowData(mudata[['gene']]))
   rownames(response_matrix) <- gene_ids
-
-  grna_target_data_frame <- rowData(mudata[['guide']]) |>
+  grna_target_data_frame <- SingleCellExperiment::rowData(mudata[['guide']]) |>
     as.data.frame() |>
     tibble::rownames_to_column(var = "grna_id") |>
     dplyr::rename(grna_target = intended_target_name) |>

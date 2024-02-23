@@ -33,10 +33,10 @@ assign_grnas_sceptre <- function(mudata) {
 
   # extract sparse logical matrix of gRNA assignments
   grna_assignment_matrix <- extract_grna_assignment_matrix(sceptre_object)
-  colnames(grna_assignment_matrix) <- colnames(assay(mudata[['guide']]))
+  colnames(grna_assignment_matrix) <- colnames(MultiAssayExperiment::assay(mudata[['guide']]))
 
   # add gRNA assignment matrix to MuData
-  assays(mudata[['guide']])[['guide_assignment']] <- grna_assignment_matrix
+  SummarizedExperiment::assays(mudata[['guide']])[['guide_assignment']] <- grna_assignment_matrix
 
   # return MuData
   return(mudata)
