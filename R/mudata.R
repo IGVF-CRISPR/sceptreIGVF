@@ -47,9 +47,6 @@ convert_mudata_to_sceptre_object <- function(mudata){
   gene_ids <- rownames(rowData(mudata[['gene']]))
   rownames(response_matrix) <- gene_ids
 
-  # response_names <- scRNA_data@rowRanges@elementMetadata$feature_name |>
-  #   as.character()
-
   grna_target_data_frame <- rowData(mudata[['guide']]) |>
     as.data.frame() |>
     tibble::rownames_to_column(var = "grna_id") |>
