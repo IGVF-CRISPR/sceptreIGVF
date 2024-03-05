@@ -35,6 +35,13 @@ convert_mudata_to_sceptre_object <- function(mudata){
   guides_data <- mudata@ExperimentList$guide
   response_matrix <- scRNA_data@assays@data@listData[["counts"]]
 
+  if(!is.null(SummarizedExperiment::colData(mudata))){
+    extra_covariates <- SummarizedExperiment::colData(mudata) |>
+      as.data.frame()
+  } else{
+    extra_covariates <- data.frame()
+  }
+
   # if guide assignments not present, then extract guide counts
   if(length(guides_data@assays@data@listData) == 1){
     grna_matrix <- guides_data@assays@data@listData[["counts"]]
@@ -59,7 +66,8 @@ convert_mudata_to_sceptre_object <- function(mudata){
     response_matrix = response_matrix,
     grna_matrix = grna_matrix,
     grna_target_data_frame = grna_target_data_frame,
-    moi = moi
+    moi = moi,
+    extra_covariates = extra_covariates
   )
 
   # return sceptre object
