@@ -4,10 +4,13 @@
 \alias{inference_sceptre}
 \title{SCEPTRE inference}
 \usage{
-inference_sceptre(mudata)
+inference_sceptre(mudata, ...)
 }
 \arguments{
 \item{mudata}{A MuData object}
+
+\item{...}{Additional arguments passed to sceptre::set_analysis_parameters();
+see \code{?sceptre::set_analysis_parameters} for details.}
 }
 \value{
 A MuData object with sceptre inference results

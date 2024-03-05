@@ -3,18 +3,13 @@
 \docType{data}
 \name{mudata_guide_assignment}
 \alias{mudata_guide_assignment}
-\title{Sample MuData}
+\title{Sample MuData for guide assignment}
 \format{
-An object of class \code{MultiAssayExperiment} of length 2.
+An object of class MuData
 }
 \usage{
 data(mudata_guide_assignment)
 }
 \description{
-A subset of the MuData object from the Gasperini et al. (2019) pilot data
+A MuData object from a subset of the the Gasperini et al. (2019) data
 }
-\examples{
-data(mudata_guide_assignment)
-mudata_guide_assignment
-}
-\keyword{datasets}

@@ -1,23 +1,25 @@
 #' Convert IGVF CRISPR MuData to sceptre_object
 #'
 #' @param mudata IGVF CRISPR MuData object
-#' @param moi A string indicating the multiplicity of infection ("high" or "low")
-#' @param include_covariates A logical indicating whether to include the
-#' covariates from colData in the sceptre object as extra covariates
 #'
 #' @return A sceptre_object
 #' @export
 #'
 #' @examples
 #' library(sceptreIGVF)
-#' # load sample MuData
-#' data(sample_mudata)
+#' # load sample MuData for guide assignment
+#' data(mudata_guide_assignment)
 #' # convert MuData object to sceptre object
-#' sceptre_object <- convert_mudata_to_sceptre_object(sample_mudata)
-#' sceptre_object
+#' sceptre_object_guide_assignment <- convert_mudata_to_sceptre_object(mudata_guide_assignment)
+#' sceptre_object_guide_assignment
+#' # load sample MuData for inference
+#' data(mudata_inference)
+#' # convert MuData object to sceptre object
+#' sceptre_object_inference <- convert_mudata_to_sceptre_object(mudata_inference)
+#' sceptre_object_inference
 convert_mudata_to_sceptre_object <- function(mudata){
   # extract information from MuData
-  moi <- metadata(mudata[['guide']])$moi
+  moi <- MultiAssayExperiment::metadata(mudata[['guide']])$moi
   if(is.null(SummarizedExperiment::assayNames(mudata[['gene']]))){
     SummarizedExperiment::assayNames(mudata[['gene']]) <- 'counts'
   } else{
@@ -62,52 +64,6 @@ convert_mudata_to_sceptre_object <- function(mudata){
 
   # return sceptre object
   return(sceptre_object)
-}
-
-#' Add a matrix as a new experiment to existing MuData object
-#'
-#' @param new_matrix A matrix to be added to the MuData object
-#' @param mudata An existing MuData object
-#' @param experiment_name A string indicating the name of the new experiment
-#'
-#' @return A MuData object with the new experiment added
-#' @export
-#'
-#' @examples
-#' library(sceptreIGVF)
-#' library(MultiAssayExperiment)
-#' # load sample MuData
-#' data(sample_mudata)
-#' # create new matrix
-#' cell_barcodes <- sample_mudata[["scRNA"]] |> colnames()
-#' num_cells <- length(cell_barcodes)
-#' num_features <- 100
-#' new_matrix <- matrix(
-#'   rnorm(num_features * num_cells),
-#'   nrow = num_features, ncol = num_cells,
-#'   dimnames = list(NULL, cell_barcodes)
-#' )
-#' # add new matrix to MuData object
-#' mudata <- add_matrix_to_mudata(new_matrix, sample_mudata, "new_experiment")
-#' mudata
-add_matrix_to_mudata <- function(new_matrix, mudata, experiment_name){
-  # convert matrix to SingleCellExperiment
-  grna_assignment_sce <- SingleCellExperiment::SingleCellExperiment(
-    assays = list(counts = new_matrix)
-  )
-  # add SingleCellExperiment to MuData
-  cell_barcodes <- colnames(new_matrix)
-  mudata@ExperimentList[[experiment_name]] <- grna_assignment_sce
-  mudata@sampleMap <- rbind(
-    MultiAssayExperiment::sampleMap(mudata),
-    data.frame(
-      assay = rep(experiment_name, length(cell_barcodes)),
-      primary = cell_barcodes,
-      colname = cell_barcodes
-    )
-  )
-  # return MuData
-  return(mudata)
 }
 
 #' Convert sceptre_object to MuData
@@ -247,6 +203,7 @@ sceptre_object_to_mudata <- function(sceptre_object){
 #' @param sceptre_object Sceptre object
 #' @param num_discovery_pairs Number of discovery pairs to sample
 #' @param gene_info Gene information data frame (optional)
+#' @param guide_capture_method Guide capture method (optional)
 #'
 #' @return List of MuData objects
 #' @export

@@ -2,23 +2,18 @@
 % Please edit documentation in R/grna-assignment.R
 \name{assign_grnas_sceptre}
 \alias{assign_grnas_sceptre}
-\title{Assign gRNAs to cells}
+\title{Assign gRNAs to cells via sceptre's mixture method}
 \usage{
 assign_grnas_sceptre(mudata)
 }
 \arguments{
 \item{mudata}{A MuData object}
-
-\item{method}{A string indicating the method to use for assigning gRNAs
-("maximum", "thresholding", or "mixture"). See \code{sceptre::assign_grnas()} for details.}
-
-\item{...}{Additional parameters passed to \code{sceptre::assign_grnas()}. See \code{sceptre::assign_grnas()} for details.}
 }
 \value{
 A MuData object with sceptre gRNA assignments added as a new experiment called "grna_assignment"
 }
 \description{
-Assign gRNAs to cells
+Assign gRNAs to cells via sceptre's mixture method
 }
 \examples{
 library(sceptreIGVF)

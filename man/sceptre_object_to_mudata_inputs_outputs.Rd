@@ -18,6 +18,8 @@ sceptre_object_to_mudata_inputs_outputs(
 \item{num_discovery_pairs}{Number of discovery pairs to sample}
 
 \item{gene_info}{Gene information data frame (optional)}
+
+\item{guide_capture_method}{Guide capture method (optional)}
 }
 \value{
 List of MuData objects

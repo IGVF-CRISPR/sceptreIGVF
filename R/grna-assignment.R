@@ -1,9 +1,6 @@
-#' Assign gRNAs to cells
+#' Assign gRNAs to cells via sceptre's mixture method
 #'
 #' @param mudata A MuData object
-#' @param method A string indicating the method to use for assigning gRNAs
-#' ("maximum", "thresholding", or "mixture"). See `sceptre::assign_grnas()` for details.
-#' @param ... Additional parameters passed to `sceptre::assign_grnas()`. See `sceptre::assign_grnas()` for details.
 #'
 #' @return A MuData object with sceptre gRNA assignments added as a new experiment called "grna_assignment"
 #' @export

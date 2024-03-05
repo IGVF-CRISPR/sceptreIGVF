@@ -8,11 +8,6 @@ convert_mudata_to_sceptre_object(mudata)
 }
 \arguments{
 \item{mudata}{IGVF CRISPR MuData object}
-
-\item{moi}{A string indicating the multiplicity of infection ("high" or "low")}
-
-\item{include_covariates}{A logical indicating whether to include the
-covariates from colData in the sceptre object as extra covariates}
 }
 \value{
 A sceptre_object
@@ -22,9 +17,14 @@ Convert IGVF CRISPR MuData to sceptre_object
 }
 \examples{
 library(sceptreIGVF)
-# load sample MuData
-data(sample_mudata)
+# load sample MuData for guide assignment
+data(mudata_guide_assignment)
 # convert MuData object to sceptre object
-sceptre_object <- convert_mudata_to_sceptre_object(sample_mudata)
-sceptre_object
+sceptre_object_guide_assignment <- convert_mudata_to_sceptre_object(mudata_guide_assignment)
+sceptre_object_guide_assignment
+# load sample MuData for inference
+data(mudata_inference)
+# convert MuData object to sceptre object
+sceptre_object_inference <- convert_mudata_to_sceptre_object(mudata_inference)
+sceptre_object_inference
 }
