@@ -1,6 +1,9 @@
 #' Convert IGVF CRISPR MuData to sceptre_object
 #'
 #' @param mudata IGVF CRISPR MuData object
+#' @param remove_collinear_covariates Logical flag indicating whether to remove
+#' multicollinear covariates. If true, checks whether multicollinearity exists
+#' among covariates, and if so, removes all covariates.
 #'
 #' @return A sceptre_object
 #' @export
@@ -8,16 +11,20 @@
 #' @examples
 #' library(sceptreIGVF)
 #' # load sample MuData for guide assignment
-#' data(mudata_guide_assignment)
+#' data(mudata_guide_assignment_gasperini)
 #' # convert MuData object to sceptre object
-#' sceptre_object_guide_assignment <- convert_mudata_to_sceptre_object(mudata_guide_assignment)
+#' sceptre_object_guide_assignment <- convert_mudata_to_sceptre_object(
+#'   mudata_guide_assignment_gasperini
+#' )
 #' sceptre_object_guide_assignment
 #' # load sample MuData for inference
-#' data(mudata_inference)
+#' data(mudata_inference_gasperini)
 #' # convert MuData object to sceptre object
-#' sceptre_object_inference <- convert_mudata_to_sceptre_object(mudata_inference)
+#' sceptre_object_inference <- convert_mudata_to_sceptre_object(
+#'   mudata_inference_gasperini
+#' )
 #' sceptre_object_inference
-convert_mudata_to_sceptre_object <- function(mudata){
+convert_mudata_to_sceptre_object <- function(mudata, remove_collinear_covariates = FALSE){
   # extract information from MuData
   moi <- MultiAssayExperiment::metadata(mudata[['guide']])$moi
   if(is.null(SummarizedExperiment::assayNames(mudata[['gene']]))){
@@ -36,8 +43,20 @@ convert_mudata_to_sceptre_object <- function(mudata){
   response_matrix <- scRNA_data@assays@data@listData[["counts"]]
 
   if(!is.null(SummarizedExperiment::colData(mudata))){
-    extra_covariates <- SummarizedExperiment::colData(mudata) |>
+    covariates <- SummarizedExperiment::colData(mudata) |>
       as.data.frame()
+    if(remove_collinear_covariates){
+      model_matrix <- stats::model.matrix(object = ~ ., data = covariates)
+      multicollinear <- Matrix::rankMatrix(model_matrix) < ncol(model_matrix)
+      if(multicollinear){
+        print("Removing multicollinear covariates")
+        extra_covariates <- data.frame()
+      } else{
+        extra_covariates <- covariates
+      }
+    } else{
+      extra_covariates <- covariates
+    }
   } else{
     extra_covariates <- data.frame()
   }

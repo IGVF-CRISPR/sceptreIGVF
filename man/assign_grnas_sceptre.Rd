@@ -10,7 +10,8 @@ assign_grnas_sceptre(mudata)
 \item{mudata}{A MuData object}
 }
 \value{
-A MuData object with sceptre gRNA assignments added as a new experiment called "grna_assignment"
+A MuData object with sceptre gRNA assignments added to the \code{guide} modality
+as a new assay called "guide_assignment"
 }
 \description{
 Assign gRNAs to cells via sceptre's mixture method
@@ -18,8 +19,8 @@ Assign gRNAs to cells via sceptre's mixture method
 \examples{
 library(sceptreIGVF)
 # load sample MuData
-data(mudata_guide_assignment)
+data(mudata_guide_assignment_gasperini)
 # assign gRNAs
-mudata_out <- assign_grnas_sceptre(mudata_guide_assignment)
+mudata_out <- assign_grnas_sceptre(mudata_guide_assignment_gasperini)
 mudata_out
 }

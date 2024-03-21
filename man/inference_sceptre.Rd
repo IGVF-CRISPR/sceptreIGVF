@@ -21,8 +21,8 @@ SCEPTRE inference
 \examples{
 library(sceptreIGVF)
 # load sample MuData
-data(mudata_inference)
+data(mudata_inference_gasperini)
 # inference
-mudata_out <- inference_sceptre(mudata_inference)
+mudata_out <- inference_sceptre(mudata_inference_gasperini)
 mudata_out
 }

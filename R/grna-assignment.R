@@ -2,19 +2,23 @@
 #'
 #' @param mudata A MuData object
 #'
-#' @return A MuData object with sceptre gRNA assignments added as a new experiment called "grna_assignment"
+#' @return A MuData object with sceptre gRNA assignments added to the `guide` modality
+#' as a new assay called "guide_assignment"
 #' @export
 #'
 #' @examples
 #' library(sceptreIGVF)
 #' # load sample MuData
-#' data(mudata_guide_assignment)
+#' data(mudata_guide_assignment_gasperini)
 #' # assign gRNAs
-#' mudata_out <- assign_grnas_sceptre(mudata_guide_assignment)
+#' mudata_out <- assign_grnas_sceptre(mudata_guide_assignment_gasperini)
 #' mudata_out
 assign_grnas_sceptre <- function(mudata) {
-  # convert MuData object to sceptre object
-  sceptre_object <- convert_mudata_to_sceptre_object(mudata)
+  # convert MuData object to sceptre object, removing multicollinear covariates
+  sceptre_object <- convert_mudata_to_sceptre_object(
+    mudata,
+    remove_collinear_covariates = TRUE
+  )
 
   # set analysis parameters
   sceptre_object <- sceptre_object |>

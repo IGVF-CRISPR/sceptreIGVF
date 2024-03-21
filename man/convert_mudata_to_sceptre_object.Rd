@@ -4,10 +4,14 @@
 \alias{convert_mudata_to_sceptre_object}
 \title{Convert IGVF CRISPR MuData to sceptre_object}
 \usage{
-convert_mudata_to_sceptre_object(mudata)
+convert_mudata_to_sceptre_object(mudata, remove_collinear_covariates = FALSE)
 }
 \arguments{
 \item{mudata}{IGVF CRISPR MuData object}
+
+\item{remove_collinear_covariates}{Logical flag indicating whether to remove
+multicollinear covariates. If true, checks whether multicollinearity exists
+among covariates, and if so, removes all covariates.}
 }
 \value{
 A sceptre_object
@@ -18,13 +22,17 @@ Convert IGVF CRISPR MuData to sceptre_object
 \examples{
 library(sceptreIGVF)
 # load sample MuData for guide assignment
-data(mudata_guide_assignment)
+data(mudata_guide_assignment_gasperini)
 # convert MuData object to sceptre object
-sceptre_object_guide_assignment <- convert_mudata_to_sceptre_object(mudata_guide_assignment)
+sceptre_object_guide_assignment <- convert_mudata_to_sceptre_object(
+  mudata_guide_assignment_gasperini
+)
 sceptre_object_guide_assignment
 # load sample MuData for inference
-data(mudata_inference)
+data(mudata_inference_gasperini)
 # convert MuData object to sceptre object
-sceptre_object_inference <- convert_mudata_to_sceptre_object(mudata_inference)
+sceptre_object_inference <- convert_mudata_to_sceptre_object(
+  mudata_inference_gasperini
+)
 sceptre_object_inference
 }

@@ -10,9 +10,9 @@
 #' @examples
 #' library(sceptreIGVF)
 #' # load sample MuData
-#' data(mudata_inference)
+#' data(mudata_inference_gasperini)
 #' # inference
-#' mudata_out <- inference_sceptre(mudata_inference)
+#' mudata_out <- inference_sceptre(mudata_inference_gasperini)
 #' mudata_out
 inference_sceptre <- function(mudata, ...) {
   # convert MuData object to sceptre object
@@ -44,8 +44,8 @@ inference_sceptre <- function(mudata, ...) {
   # extra gRNA assignment and turn off QC
   sceptre_object <- sceptre_object |>
     sceptre::assign_grnas(method = "thresholding", threshold = 1) |>
-    sceptre::run_qc(n_nonzero_trt_thresh = 0,
-                    n_nonzero_cntrl_thresh = 0,
+    sceptre::run_qc(n_nonzero_trt_thresh = 0L,
+                    n_nonzero_cntrl_thresh = 0L,
                     p_mito_threshold = 1)
 
   # run discovery analysis
