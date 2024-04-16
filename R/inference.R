@@ -41,7 +41,7 @@ inference_sceptre <- function(mudata, ...) {
   # set analysis parameters
   sceptre_object <- do.call(sceptre::set_analysis_parameters, args_list)
 
-  # extra gRNA assignment and turn off QC
+  # extract gRNA assignment and turn off QC
   sceptre_object <- sceptre_object |>
     sceptre::assign_grnas(method = "thresholding", threshold = 1) |>
     sceptre::run_qc(n_nonzero_trt_thresh = 0L,

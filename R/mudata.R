@@ -107,7 +107,9 @@ sceptre_object_to_mudata <- function(sceptre_object){
   }
   response_matrix <- sceptre_object@response_matrix[, cells_in_use]
   grna_matrix <- sceptre_object@grna_matrix[, cells_in_use]
-  grna_assignment_matrix <- extract_grna_assignment_matrix(sceptre_object)
+  grna_assignment_matrix <- sceptre_object |>
+    sceptre::get_grna_assignments() |>
+    methods::as("dsparseMatrix")
   if(!is.null(grna_assignment_matrix)){
    grna_assignment_matrix <- grna_assignment_matrix[, cells_in_use]
   }
