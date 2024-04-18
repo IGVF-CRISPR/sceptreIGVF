@@ -33,7 +33,7 @@ inference_sceptre <- function(mudata, ...) {
     warning("The `discovery_pairs` argument is ignored. The `discovery_pairs` are set from the `pairs_to_test` metadata.")
   }
   args_list[["discovery_pairs"]] <- discovery_pairs
-  if (!"formula_object" %in% names(args_list)) {
+  if (!"formula_object" %in% names(args_list) | formula_object == "default") {
     args_list$formula_object <- stats::formula(~ log(response_n_nonzero) + log(response_n_umis))
   }
   args_list$sceptre_object <- sceptre_object
